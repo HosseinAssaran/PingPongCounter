@@ -1,0 +1,41 @@
+# Build artifacts
+/build/
+/bin/
+/lib/
+/lib64/
+/CMakeFiles/
+/CMakeCache.txt
+Makefile
+cmake_install.cmake
+CTestTestfile.cmake
+
+# Compilation output
+*.o
+*.so
+*.so.*
+*.a
+*.exe
+*.out
+*.obj
+*.dll
+
+# Logs and debugging
+*.log
+*.trace
+gmon.out
+vgcore.*
+
+# IDE-specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+*.bak
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Generated configuration files
+*.cmake
+CMakeUserPresets.json
