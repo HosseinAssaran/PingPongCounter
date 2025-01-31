@@ -1,12 +1,12 @@
-# Process Communication via Unix Domain Sockets
+# Process Communication via Sahred Memory
 
-This project implements two separate processes that communicate using Unix domain sockets. The first process (Initiator) sends a numerical counter to the second process (Receiver), which increments and returns it. The exchange continues until the counter reaches 10, at which point both processes terminate.
+This project implements two separate processes that communicate using Sahred Memory. The first process (Initiator) sends a numerical counter to the second process (Receiver), which increments and returns it. The exchange continues until the counter reaches 10, at which point both processes terminate.
 
 ## Features
-- **Interprocess Communication (IPC)** using Unix domain sockets
+- **Interprocess Communication (IPC)** using Sahred Memory
 - **Bidirectional message passing** between processes
-- **Process synchronization** using structured communication
-- **Logging** to both console and `process_log.txt`
+- **Process synchronization** using semaphore
+- **Logging** to both console and `program_log.txt`
 - **CMake-based build system** for easy compilation on Linux (tested on Ubuntu 22.04)
 
 ## Compilation and Execution Instructions
@@ -31,33 +31,49 @@ cmake ..
 make
 ```
 
-### **4. Run the Program**
-```sh
-./pingpongcounter
+### **4. Running the Program**
+The program consists of two processes:
+1. **Initiator Process (`initiator`)**: Starts the counter and communicates with the receiver.
+2. **Receiver Process (`receiver`)**: Receives the counter, increments it, and sends it back.
+
+### Step 1: Start the Initiator
+```bash
+./initiator
 ```
 
+### Step 2: Start the Receiver (in another terminal)
+```bash
+./receiver
+```
 ### **5. Check the Logs**
-Execution logs are saved in `process_log.txt`. You can view them with:
+Execution logs are saved in `program_log.txt`. You can view them with:
 ```sh
 cat process_log.txt
 ```
 
-## Code Testing
-To test the execution, ensure the expected log output is produced:
-1. The initiator starts and sends `1` to the receiver.
-2. The receiver increments and returns `2`.
-3. This exchange continues until `10` is reached.
-4. Both processes terminate successfully.
+Both processes will exchange numbers, logging each step to `stdout` and `program_log.txt`. Once the counter reaches **10**, both processes terminate automatically.
 
-## Cleanup
-After execution, remove the Unix domain socket file if necessary:
-```sh
-rm -f /tmp/process_communication.sock
+### **6. Log Output**
+The log file (`program_log.txt`) records all interactions:
+```txt
+Initiator sends value: 0
+Receiver receives and increments value: 1
+Initiator sends value: 1
+Receiver receives and increments value: 2
+...
+Initiator process finished. Counter reached 10.
+Receiver process finished. Counter reached 10.
+```
+
+### **7. Cleanup**
+Once the program terminates, clean up shared memory and semaphores (if needed):
+```bash
+ipcs -m  # Check active shared memory segments
+ipcrm -M 0x<shm_id>  # Remove shared memory (replace <shm_id> with the correct ID)
+
+ls /dev/shm  # Check active shared memory objects
+rm /dev/shm/shared_counter  # Remove manually if necessary
 ```
 
 ## Notes
-- If the program does not start correctly, ensure that no previous socket file exists:
-  ```sh
-  rm -f /tmp/process_communication.sock
-  ```
-- If execution fails, verify that `process_log.txt` contains error details.
+- If execution fails, verify that `program_log.txt` contains error details.

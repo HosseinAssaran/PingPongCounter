@@ -5,6 +5,7 @@
 #include <sys/stat.h>
 #include <semaphore.h>
 #include <cstring>
+#include "Logger.h"
 
 #define SHM_NAME "/shared_counter"
 #define SEM_INIT_NAME "/sem_init"
@@ -12,18 +13,20 @@
 
 int main()
 {
+    Logger logger("program_log.txt"); // Create a logger instance to log to file and stdout
+
     // Open shared memory object
     int shm_fd = shm_open(SHM_NAME, O_CREAT | O_RDWR, 0666);
     if (shm_fd == -1)
     {
-        std::cerr << "Failed to open shared memory." << std::endl;
+        logger.log("Failed to open shared memory.");
         return 1;
     }
 
     // Set the size of the shared memory region
     if (ftruncate(shm_fd, sizeof(int)) == -1)
     {
-        std::cerr << "Failed to truncate shared memory." << std::endl;
+        logger.log("Failed to truncate shared memory.");
         return 1;
     }
 
@@ -31,7 +34,7 @@ int main()
     int *counter = (int *)mmap(nullptr, sizeof(int), PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
     if (counter == MAP_FAILED)
     {
-        std::cerr << "Failed to map shared memory." << std::endl;
+        logger.log("Failed to map shared memory.");
         return 1;
     }
 
@@ -44,14 +47,14 @@ int main()
 
     if (sem_init == SEM_FAILED || sem_receive == SEM_FAILED)
     {
-        std::cerr << "Failed to open semaphores." << std::endl;
+        logger.log("Failed to open semaphores.");
         return 1;
     }
 
     while (*counter < 10)
     {
         // Send the current counter value to the receiver
-        std::cout << "Initiator sends value: " << *counter << std::endl;
+        logger.log("Initiator sends value: " + std::to_string(*counter));
 
         // Wake up the receiver by posting on the init semaphore
         sem_post(sem_init);
@@ -62,10 +65,10 @@ int main()
         // Increment the counter
         (*counter)++;
     }
-
+    
     sem_post(sem_init);
 
-    std::cout << "Initiator process finished. Counter reached 10." << std::endl;
+    logger.log("Initiator process finished. Counter reached 10.");
 
     // Clean up semaphores
     sem_close(sem_init);
