@@ -57,9 +57,8 @@ Both processes will exchange numbers, logging each step to `stdout` and `program
 The log file (`program_log.txt`) records all interactions:
 ```txt
 Initiator sends value: 0
-Receiver receives and increments value: 1
-Initiator sends value: 1
-Receiver receives and increments value: 2
+Receiver send value: 1
+Initiator sends value: 2
 ...
 Initiator process finished. Counter reached 10.
 Receiver process finished. Counter reached 10.

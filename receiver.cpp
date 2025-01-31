@@ -43,13 +43,13 @@ int main()
 
     // Wait for the initiator to send the counter value
     sem_wait(sem_init);
-    
+
     while (*counter < 10)
     {
         // Increment the counter
         (*counter)++;
 
-        logger.log("Receiver receives and increments value: " + std::to_string(*counter));
+        logger.log("Receiver send value: " + std::to_string(*counter));
 
         // Wake up the initiator by posting on the receive semaphore
         sem_post(sem_receive);
