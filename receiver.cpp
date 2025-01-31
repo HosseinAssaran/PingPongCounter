@@ -41,6 +41,9 @@ int main()
         return 1;
     }
 
+    // Wait for the initiator to send the counter value
+    sem_wait(sem_init);
+    
     while (*counter < 10)
     {
         // Increment the counter
