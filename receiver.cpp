@@ -8,7 +8,7 @@
 #include "Logger.h"
 
 #define SHM_NAME "/shared_counter"
-#define SEM_INIT_NAME "/sem_init"
+#define SEM_INIT_NAME "/sem_inititor"
 #define SEM_RECEIVE_NAME "/sem_receive"
 
 int main()
@@ -32,17 +32,17 @@ int main()
     }
 
     // Open semaphores
-    sem_t *sem_init = sem_open(SEM_INIT_NAME, 0);       // Initial semaphore (waiting for initiator)
+    sem_t *sem_inititor = sem_open(SEM_INIT_NAME, 0);       // Initial semaphore (waiting for initiator)
     sem_t *sem_receive = sem_open(SEM_RECEIVE_NAME, 0); // Receiver semaphore
 
-    if (sem_init == SEM_FAILED || sem_receive == SEM_FAILED)
+    if (sem_inititor == SEM_FAILED || sem_receive == SEM_FAILED)
     {
         logger.log("Failed to open semaphores.");
         return 1;
     }
 
     // Wait for the initiator to send the counter value
-    sem_wait(sem_init);
+    sem_wait(sem_inititor);
 
     while (*counter < 10)
     {
@@ -54,13 +54,13 @@ int main()
         // Wake up the initiator by posting on the receive semaphore
         sem_post(sem_receive);
         // Wait for the initiator to send the counter value
-        sem_wait(sem_init);
+        sem_wait(sem_inititor);
     }
 
     logger.log("Receiver process finished. Counter reached 10.");
 
     // Clean up semaphores
-    sem_close(sem_init);
+    sem_close(sem_inititor);
     sem_close(sem_receive);
 
     return 0;
