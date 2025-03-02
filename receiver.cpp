@@ -5,21 +5,56 @@
 #include <sys/stat.h>
 #include <semaphore.h>
 #include <cstring>
+#include <signal.h>
 #include "Logger.h"
 
 #define SHM_NAME "/shared_counter"
 #define SEM_INIT_NAME "/sem_inititor"
 #define SEM_RECEIVE_NAME "/sem_receive"
 
+// Global variables for cleanup in signal handler
+int shm_fd = -1;
+int *counter = nullptr;
+sem_t *sem_inititor = nullptr;
+sem_t *sem_receive = nullptr;
+
+// Signal handler for graceful termination
+void cleanup(int sig)
+{
+    munmap(counter, sizeof(int));
+    close(shm_fd);
+    sem_close(sem_inititor);
+    sem_close(sem_receive);
+    exit(sig);
+}
+
 int main()
 {
     Logger logger("program_log.txt"); // Create a logger instance to log to file and stdout
 
-    // Open shared memory object
-    int shm_fd = shm_open(SHM_NAME, O_RDWR, 0666);
+    // Setup signal handlers
+    signal(SIGINT, cleanup);
+    signal(SIGTERM, cleanup);
+
+    // Open shared memory with retry logic
+    int retry_count = 0;
+    const int max_retries = 5;
+
+    while (retry_count < max_retries)
+    {
+        shm_fd = shm_open(SHM_NAME, O_RDWR, 0666);
+        if (shm_fd != -1)
+            break;
+
+        logger.log("Waiting for initiator to create shared memory... (attempt " +
+                   std::to_string(retry_count + 1) + "/" + std::to_string(max_retries) + ")");
+        sleep(1);
+        retry_count++;
+    }
+
     if (shm_fd == -1)
     {
-        logger.log("Failed to open shared memory. Please first run the inititor.");
+        logger.log("Failed to open shared memory after maximum retries. Please run the initiator first.");
         return 1;
     }
 
@@ -28,24 +63,28 @@ int main()
     if (counter == MAP_FAILED)
     {
         logger.log("Failed to map shared memory.");
+        close(shm_fd);
         return 1;
     }
 
     // Open semaphores
-    sem_t *sem_inititor = sem_open(SEM_INIT_NAME, 0);       // Initial semaphore (waiting for initiator)
+    sem_t *sem_inititor = sem_open(SEM_INIT_NAME, 0);   // Initial semaphore (waiting for initiator)
     sem_t *sem_receive = sem_open(SEM_RECEIVE_NAME, 0); // Receiver semaphore
 
     if (sem_inititor == SEM_FAILED || sem_receive == SEM_FAILED)
     {
         logger.log("Failed to open semaphores.");
+        cleanup(0);
         return 1;
     }
 
-    // Wait for the initiator to send the counter value
-    sem_wait(sem_inititor);
-
     while (*counter < 10)
     {
+        // Wait for the initiator to send the counter value
+        sem_wait(sem_inititor);
+        if (*counter == 10)
+            break;
+
         // Increment the counter
         (*counter)++;
 
@@ -53,15 +92,11 @@ int main()
 
         // Wake up the initiator by posting on the receive semaphore
         sem_post(sem_receive);
-        // Wait for the initiator to send the counter value
-        sem_wait(sem_inititor);
     }
 
     logger.log("Receiver process finished. Counter reached 10.");
 
-    // Clean up semaphores
-    sem_close(sem_inititor);
-    sem_close(sem_receive);
+    cleanup(0);
 
     return 0;
 }
