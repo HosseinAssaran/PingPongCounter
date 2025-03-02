@@ -85,7 +85,7 @@ int main()
         if (clock_gettime(CLOCK_REALTIME, &ts) == -1)
         {
             logger.log("Failed to get time.");
-            cleanup(0);
+            cleanup(errno);
             return 1;
         }
         ts.tv_sec += 5; // 5 second timeout
@@ -95,13 +95,13 @@ int main()
             if (errno == ETIMEDOUT)
             {
                 logger.log("Timeout waiting for initiator. Exiting.");
-                cleanup(0);
+                cleanup(errno);
                 return 1;
             }
             else
             {
                 logger.log("Error waiting for semaphore.");
-                cleanup(0);
+                cleanup(errno);
                 return 1;
             }
         }

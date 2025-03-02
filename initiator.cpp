@@ -22,17 +22,12 @@ sem_t *sem_receive = nullptr;
 void cleanup(int sig)
 {
     munmap(counter, sizeof(int));
-
     close(shm_fd);
-
     sem_close(sem_inititor);
     sem_unlink(SEM_INIT_NAME);
-
     sem_close(sem_receive);
     sem_unlink(SEM_RECEIVE_NAME);
-
     shm_unlink(SHM_NAME);
-
     exit(sig);
 }
 
@@ -97,7 +92,7 @@ int main()
         if (clock_gettime(CLOCK_REALTIME, &ts) == -1)
         {
             logger.log("Failed to get time.");
-            cleanup(0);
+            cleanup(errno);
             return 1;
         }
         ts.tv_sec += 5; // 5 second timeout
@@ -107,13 +102,13 @@ int main()
             if (errno == ETIMEDOUT)
             {
                 logger.log("Timeout waiting for receiver. Exiting.");
-                cleanup(0);
+                cleanup(errno);
                 return 1;
             }
             else
             {
                 logger.log("Error waiting for semaphore.");
-                cleanup(0);
+                cleanup(errno);
                 return 1;
             }
         }
