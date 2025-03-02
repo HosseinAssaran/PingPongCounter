@@ -80,8 +80,32 @@ int main()
 
     while (*counter < 10)
     {
-        // Wait for the initiator to send the counter value
-        sem_wait(sem_inititor);
+        // Wait for the initiator with timeout
+        struct timespec ts;
+        if (clock_gettime(CLOCK_REALTIME, &ts) == -1)
+        {
+            logger.log("Failed to get time.");
+            cleanup(0);
+            return 1;
+        }
+        ts.tv_sec += 5; // 5 second timeout
+
+        if (sem_timedwait(sem_inititor, &ts) == -1)
+        {
+            if (errno == ETIMEDOUT)
+            {
+                logger.log("Timeout waiting for initiator. Exiting.");
+                cleanup(0);
+                return 1;
+            }
+            else
+            {
+                logger.log("Error waiting for semaphore.");
+                cleanup(0);
+                return 1;
+            }
+        }
+        
         if (*counter == 10)
             break;
 
